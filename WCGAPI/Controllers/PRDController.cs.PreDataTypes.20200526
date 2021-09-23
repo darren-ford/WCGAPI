@@ -1,0 +1,3852 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+//using PRDRESTDataAccess;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
+using Microsoft.Owin.Security.OAuth;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+using System.Reflection;
+using System.Diagnostics;
+//using NLog;
+using WinSCP;
+using Newtonsoft.Json;
+
+
+using Microsoft.AspNet.Identity;
+using Microsoft.AspNet.Identity.EntityFramework;
+using Microsoft.AspNet.Identity.Owin;
+
+
+
+namespace WCGAPI.Controllers
+{
+    /*
+    public class customers
+    {
+        public string CustomerName { get; set; }
+        public string AccountNumber { get; set; }
+        public string ContractID { get; set; }
+        public string MPNID { get; set; }
+        public string VATID { get; set; }
+        public string AddressLine1 { get; set; }
+        public string AddressLine2 { get; set; }
+        public string AddressLine3 { get; set; }
+        public string AddressLine4 { get; set; }
+        public string City { get; set; }
+        public string PostCode { get; set; }
+        public string CSPDiscount { get; set; }
+        public string AzureDiscount { get; set; }
+        public string CustomerType { get; set; }
+    }
+    public class LoginData
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+    }
+    public class SearchData
+    {
+        public string Accountnumber { get; set; }
+        public string Date { get; set; }
+        public string ID { get; set; }
+        public string ProductCode { get; set; }
+    }*/
+    //Input & Output Class Pairs
+    public class APIResults_Login_Input
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string UserName { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Password { get; set; }
+    }
+    public class APIResults_Login_Output
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Token { get; set; }
+    }
+    public class APIResults_Validate_Input
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string LoginToken { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string MethodName { get; set; }
+
+    }
+    public class APIResults_General_Output
+    {
+        public string data { get; set; }
+
+    }
+    public class APIResults_Validate_Output
+    {
+        public string ConnectionString { get; set; }
+        public string DatabaseID { get; set; }
+        public string Code { get; set; }
+        public string Message { get; set; }
+    }
+    public class APIResults_Validate_Output2
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Token { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ConnectionString { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string DatabaseID { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Code { get; set; }
+    }
+    public class APIResults_Error_Output
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Code { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Message { get; set; }
+    }
+    public class APIResults_InvList_Input
+    {
+        /// <summary>
+        /// Customer account number
+        /// </summary>
+        public string Customer { get; set; }
+        /// <summary>
+        /// Only return records created or modified since this date (YYYYMMDD format)
+        /// </summary>
+        public string Date { get; set; }
+    }
+    public class APIResults_InvList_Output
+    {
+        public string Invoice { get; set; }
+        public string PeriodStart { get; set; }
+        public string DueDate { get; set; }
+        public string AmountExclVAT { get; set; }
+        public string Cost { get; set; }
+        public string Profit { get; set; }
+        public string AmountInclVAT { get; set; }
+        public string VATAmount { get; set; }
+        public string Customer { get; set; }
+        public string InvoiceDate { get; set; }
+        public string InvoiceType { get; set; }
+    }
+    public class APIResults_TelProdList_Input
+    {
+        //<summary>
+        //Invoice number
+        //</summary>
+        public string Invoice { get; set; }
+        /// <summary>
+        /// Only return records created or modified since this date (YYYYMMDD format)
+        /// </summary>
+        public string Date { get; set; }
+        public string Product { get; set; }
+        public string Telephone { get; set; }
+    }
+    public class APIResults_TelProdList_Output
+    {
+        public string Customer { get; set; }
+        public string Telephone { get; set; }
+        public string Product { get; set; }
+        public string Description { get; set; }
+        public string EffectiveDate { get; set; }
+        public string ExpiryDate { get; set; }
+        public string BillAnniversaryDate { get; set; }
+        public string SubscriptionID { get; set; }
+        public string Units { get; set; }
+        public string Rate { get; set; }
+        public string Cost { get; set; }
+        public string BillAmount { get; set; }
+    }
+    public class APIResults_CustProdList_Input
+    {
+        /// <summary>
+        /// Customer account number
+        /// </summary>
+        public string Customer { get; set; }
+        public string Invoice { get; set; }
+        /// <summary>
+        /// Product Code
+        /// </summary>
+        public string Product { get; set; }
+        /// <summary>
+        /// Only return records created or modified since this date (YYYYMMDD format)
+        /// </summary>
+        public string Date { get; set; }
+    }
+    public class APIResults_CustProdList_Output
+    {
+        public string Customer { get; set; }
+        public string Product { get; set; }
+        public string Description { get; set; }
+        public string EffectiveDate { get; set; }
+        public string ExpiryDate { get; set; }
+        public string BillAnniversaryDate { get; set; }
+        public string SubscriptionID { get; set; }
+        public string Units { get; set; }
+        public string Rate { get; set; }
+        public string Cost { get; set; }
+        public string BillAmount { get; set; }
+        public string ServiceName { get; set; }
+    }
+    public class APIResults_ProdList_Input
+    {
+        /// <summary>
+        /// Product Code
+        /// </summary>
+        public string Product { get; set; }
+        public string Invoice { get; set; }
+        /// <summary>
+        /// Only return records created or modified since this date (YYYYMMDD format)
+        /// </summary>
+        public string Date { get; set; }
+    }
+    public class APIResults_ProdList_Output
+    {
+        public string ProductCode { get; set; }
+        public string Description { get; set; }
+        public string ProductGroup { get; set; }
+        public string Period { get; set; }
+    }
+    /// <summary>
+    /// Customer Details
+    /// </summary>
+    public class APIResults_CustDetails_Input
+    {
+        /// <summary>
+        /// Unique per record in Marketplace, used as identifier of customer record 
+        /// </summary>
+        public string AccountNumber { get; set; }
+        /// <summary>
+        /// Account Number of Parent Record
+        /// </summary>
+        public string ParentAccountNumber { get; set; }
+        /// <summary>
+        /// Only return records created or modified since this date (YYYYMMDD format)
+        /// </summary>
+        public string Date { get; set; }
+    }
+    /// <summary>
+    /// Customer Details
+    /// </summary>
+    public class APIResults_CustDetails_Output
+    {
+        /// <summary>
+        /// Unique per record in Marketplace, used as identifier of customer record 
+        /// </summary>
+        public string AccountNumber { get; set; }
+        /// <summary>
+        /// Account Number of Parent Record
+        /// </summary>
+        public string Parent { get; set; }
+        /// <summary>
+        /// Non-unique company \ site name
+        /// </summary>
+        public string CustomerName { get; set; }
+        /// <summary>
+        /// Non-Unique value, multiple sites may be on same Contract ID
+        /// </summary>
+        public string ContractID { get; set; }
+        /// <summary>
+        /// Non-Unique value, multiple sites may be on same MPN ID
+        /// </summary>
+        public string MPNID { get; set; }
+        public string VATID { get; set; }
+        /// <summary>
+        /// Reseller or Site
+        /// </summary>
+        public string CustomerType { get; set; }
+        public string AddressLine1 { get; set; }
+        public string AddressLine2 { get; set; }
+        public string AddressLine3 { get; set; }
+        public string AddressLine4 { get; set; }
+        public string City { get; set; }
+        public string PostCode { get; set; }
+        /// <summary>
+        /// Percentage discount applied after default mark-up
+        /// </summary>
+        public string CSPDiscount { get; set; }
+        /// <summary>
+        /// Percentage discount applied after default mark-up
+        /// </summary>
+        public string AzureDiscount { get; set; }
+    }
+    public class APIResults_CustDetails_Output_Extra
+    {
+        /// <summary>
+        /// Unique per record in Marketplace, used as identifier of customer record 
+        /// </summary>
+        public string AccountNumber { get; set; }
+        /// <summary>
+        /// Account Number of Parent Record
+        /// </summary>
+        public string Parent { get; set; }
+        /// <summary>
+        /// Non-unique company \ site name
+        /// </summary>
+        public string CustomerName { get; set; }
+        /// <summary>
+        /// Non-Unique value, multiple sites may be on same Contract ID
+        /// </summary>
+        public string ContractID { get; set; }
+        /// <summary>
+        /// Non-Unique value, multiple sites may be on same MPN ID
+        /// </summary>
+        public string MPNID { get; set; }
+        public string VATID { get; set; }
+        /// <summary>
+        /// Reseller or Site
+        /// </summary>
+        public string CustomerType { get; set; }
+        public string AddressLine1 { get; set; }
+        public string AddressLine2 { get; set; }
+        public string AddressLine3 { get; set; }
+        public string AddressLine4 { get; set; }
+        public string City { get; set; }
+        public string PostCode { get; set; }
+        /// <summary>
+        /// Percentage discount applied after default mark-up
+        /// </summary>
+        public string CSPDiscount { get; set; }
+        /// <summary>
+        /// Percentage discount applied after default mark-up
+        /// </summary>
+        public string AzureDiscount { get; set; }
+        public string Email { get; set; }
+        public string Domain { get; set; }
+        public string Country { get; set; }
+        public string Currency { get; set; }
+    }
+    public class APIResults_CustDetails_Output_Test
+    {
+        /// <summary>
+        /// Unique per record in Marketplace, used as identifier of customer record 
+        /// </summary>
+        public string AccountNumber { get; set; }
+        /// <summary>
+        /// Account Number of Parent Record
+        /// </summary>
+        public string Parent { get; set; }
+        /// <summary>
+        /// Non-unique company \ site name
+        /// </summary>
+        public string CustomerName { get; set; }
+        /// <summary>
+        /// Non-Unique value, multiple sites may be on same Contract ID
+        /// </summary>
+        public string ContractID { get; set; }
+        /// <summary>
+        /// Non-Unique value, multiple sites may be on same MPN ID
+        /// </summary>
+        public string MPNID { get; set; }
+        public string VATID { get; set; }
+        /// <summary>
+        /// Reseller or Site
+        /// </summary>
+        public string CustomerType { get; set; }
+        public string AddressLine1 { get; set; }
+        public string AddressLine2 { get; set; }
+        public string AddressLine3 { get; set; }
+        public string AddressLine4 { get; set; }
+        public string City { get; set; }
+        public string PostCode { get; set; }
+        /// <summary>
+        /// Percentage discount applied after default mark-up
+        /// </summary>
+        public string CSPDiscount { get; set; }
+        /// <summary>
+        /// Percentage discount applied after default mark-up
+        /// </summary>
+        public float AzureDiscount { get; set; }
+        public string Email { get; set; }
+        public string Domain { get; set; }
+        public string Country { get; set; }
+        public string Currency { get; set; }
+    }
+
+    /// <summary>
+    /// Customer List
+    /// </summary>
+    public class APIResults_CustList_Input
+    {
+        /// <summary>
+        /// Unique per record in Marketplace, used as identifier of customer record 
+        /// </summary>
+        public string AccountNumber { get; set; }
+        /// <summary>
+        /// Non-unique company \ site name
+        /// </summary>
+        public string CustomerName { get; set; }
+        /// <summary>
+        /// Only return records created or modified since this date (YYYYMMDD format)
+        /// </summary>
+        public string Date { get; set; }
+    }
+    ///<summary>
+    /// Customer List
+    ///</summary>
+    public class APIResults_CustList_Output
+    {
+        ///<summary>
+        /// Unique per record in Marketplace, used as identifier of customer record
+        ///</summary>
+        public string AccountNumber { get; set; }
+        /// <summary>
+        /// Non-unique value
+        /// </summary>
+        public string CustomerName { get; set; }
+        /// <summary>
+        /// Reseller or Site
+        /// </summary>
+        public string CustomerType { get; set; }
+    }
+
+    public class APIResults_CustList_OutputTest
+    {
+        ///<summary>
+        /// Unique per record in Marketplace, used as identifier of customer record
+        ///</summary>
+        public string AccountNumber { get; set; }
+        /// <summary>
+        /// Non-unique value
+        /// </summary>
+        public string CustomerName { get; set; }
+        /// <summary>
+        /// Reseller or Site
+        /// </summary>
+        public string CustomerType { get; set; }
+        /// <summary>
+        /// ID
+        /// </summary>
+        public int CustomerID { get; set; }
+    }
+    /*    public static string GetJSonContents(object rec)
+        {
+            string output = "";
+            output = JsonConvert.SerializeObject(rec);
+            return output;
+        }*/
+
+    public class APIResults_InvLines_Input
+    {
+        public string InvoiceNumber { get; set; }
+    }
+    public class APIResults_InvLines_Output
+    {
+        public string InvoiceNumber { get; set; }
+        public string Customer { get; set; }
+        public string Product { get; set; }
+        public string Units { get; set; }
+        public string LinePeriodStart { get; set; }
+        public string LinePeriodEnd { get; set; }
+        public string DueDate { get; set; }
+        public string LineAmountExclVAT { get; set; }
+        public string LineCost { get; set; }
+        public string LineProfit { get; set; }
+        public string LineAmountInclVAT { get; set; }
+        public string VATAmount { get; set; }
+        public string InvoiceDate { get; set; }
+        public string InvoiceType { get; set; }
+    }
+    public class APIResults_CustTelList_Input
+    {
+        /// <summary>
+        /// Customer account number
+        /// </summary>
+        public string Customer { get; set; }
+        public string Telephone { get; set; }
+        /// <summary>
+        /// Only return records created or modified since this date (YYYYMMDD format)
+        /// </summary>
+        public string Date { get; set; }
+    }
+    public class APIResults_CustTelList_Output
+    {
+        public string Customer { get; set; }
+        public string Telephone { get; set; }
+        public string EffectiveDate { get; set; }
+        public string ExpiryDate { get; set; }
+    }
+    public class APIResults_DailyCustProd_Input
+        {
+            /// <summary>
+            /// Customer account number
+            /// </summary>
+            public string Customer { get; set; }
+            /// <summary>
+            /// Only return records created or modified since this date (YYYYMMDD format)
+            /// </summary>
+            public string Date { get; set; }
+        }
+    public class APIResults_DailyCustProd_Output
+    {
+        public string Customer { get; set; }
+        public string Product { get; set; }
+        public string Description { get; set; }
+        public string EffectiveDate { get; set; }
+        public string ExpiryDate { get; set; }
+        public string BillAnniversaryDate { get; set; }
+        public string SubscriptionID { get; set; }
+        public string Units { get; set; }
+        public string Rate { get; set; }
+        public string Cost { get; set; }
+        public string MarkUpPercentage { get; set; }
+        public string DiscountPercentage { get; set; }
+        public string BillAmount { get; set; }
+    }
+    public class APIResults_DailyCustProdChanges_Input
+        {
+            /// <summary>
+            /// Customer account number
+            /// </summary>
+            public string Customer { get; set; }
+            /// <summary>
+            /// Only return records created or modified since this date (YYYYMMDD format)
+            /// </summary>
+            public string Date { get; set; }
+        }
+    public class APIResults_DailyCustProdChanges_Output
+    {
+        public string Customer { get; set; }
+        public string Product { get; set; }
+        public string Description { get; set; }
+        public string EffectiveDate { get; set; }
+        public string ExpiryDate { get; set; }
+        public string BillAnniversaryDate { get; set; }
+        public string SubscriptionID { get; set; }
+        public string Units { get; set; }
+        public string Rate { get; set; }
+        public string Cost { get; set; }
+        public string MarkUpPercentage { get; set; }
+        public string DiscountPercentage { get; set; }
+        public string BillAmount { get; set; }
+    }
+    public class APIResults_ProductStatus_Input
+        {
+            /// <summary>
+            /// Customer account number
+            /// </summary>
+            public string Customer { get; set; }
+            /// <summary>
+            /// Product code
+            /// </summary>
+            public string Product { get; set; }
+            /// <summary>
+            /// Only return records created or modified since this date (YYYYMMDD format)
+            /// </summary>
+            public string Date { get; set; }
+        }
+    public class APIResults_ProductStatus_Output
+    {
+        public string Customer { get; set; }
+        public string Product { get; set; }
+        public string Description { get; set; }
+        public string EffectiveDate { get; set; }
+        public string ExpiryDate { get; set; }
+        public string BillAnniversaryDate { get; set; }
+        public string SubscriptionID { get; set; }
+        public string Units { get; set; }
+        public string Rate { get; set; }
+        public string Cost { get; set; }
+        public string MarkUpPercentage { get; set; }
+        public string DiscountPercentage { get; set; }
+        public string BillAmount { get; set; }
+    }
+    public class products
+    {
+        public string ProductCode { get; set; }
+        public string Description { get; set; }
+        public string ProductGroup { get; set; }
+        public string Period { get; set; }
+    }
+    public class telephones
+    {
+        public decimal? Rowid { get; set; }
+        public string Telephonenumber { get; set; }
+        public decimal? Customer { get; set; }
+        public decimal? Effectivedate { get; set; }
+        public decimal? Expirydate { get; set; }
+        public string Rateschemecode { get; set; }
+        public string Description { get; set; }
+        public string Linetype { get; set; }
+        public string CostCentre1 { get; set; }
+        public string CostCentre2 { get; set; }
+        public string CostCentre3 { get; set; }
+        public string CostCentre4 { get; set; }
+        public string CostCentre5 { get; set; }
+        public string CostCentre6 { get; set; }
+        public string Createdby { get; set; }
+        public decimal? Createdon { get; set; }
+        public string Modifiedby { get; set; }
+        public decimal? Modifiedon { get; set; }
+        public string WholesaleRateSchemeCode { get; set; }
+        public decimal? PROVIDER { get; set; }
+    }
+    public class ftpFiles
+    {
+        public string Name { get; set; }
+//        public string FullName { get; set; }
+        public string FileType { get; set; }
+        public decimal? Length { get; set; }
+//        public decimal? Length32 { get; set; }
+//        public string LastWriteTime { get; set; }
+//        public string FilePermissions { get; set; }
+//        public string Owner { get; set; }
+//        public string Group { get; set; }
+//        public string IsDirectory { get; set; }
+//        public string IsThisDirectory { get; set; }
+//        public string IsParentDirectory { get; set; }
+    }
+
+
+
+    static public class DbUtil
+
+    {
+        static public string message;
+        static public SqlConnection GetConnection()
+        {
+            string conStr = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+            SqlConnection con = new SqlConnection(conStr);
+            DbUtil.message = "";
+            con.InfoMessage += delegate (object sender, SqlInfoMessageEventArgs e)
+            {
+                if (DbUtil.message.Length > 0) DbUtil.message += "\n";
+                DbUtil.message += e.Message;
+            };
+            return con;
+        }
+        static public SqlConnection GetConnection_Target(string conStr)
+        {
+            if(conStr.Equals(""))
+                conStr = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+            SqlConnection con = new SqlConnection(conStr);
+            DbUtil.message = "";
+            con.InfoMessage += delegate (object sender, SqlInfoMessageEventArgs e)
+            {
+                if (DbUtil.message.Length > 0) DbUtil.message += "\n";
+                DbUtil.message += e.Message;
+            };
+            return con;
+        }
+    }
+
+    public static class DbExtensions
+    {
+        public static List<T> ToListCollection<T>(this DataTable dt)
+        {
+            List<T> lst = new System.Collections.Generic.List<T>();
+            Type tClass = typeof(T);
+            PropertyInfo[] pClass = tClass.GetProperties();
+            List<DataColumn> dc = dt.Columns.Cast<DataColumn>().ToList();
+            T cn;
+            foreach (DataRow item in dt.Rows)
+            {
+                cn = (T)Activator.CreateInstance(tClass);
+                foreach (PropertyInfo pc in pClass)
+                {
+                    // Can comment try catch block. 
+                    try
+                    {
+                        DataColumn d = dc.Find(c => c.ColumnName == pc.Name);
+                        if (d != null && item[pc.Name] != DBNull.Value)
+                            pc.SetValue(cn, item[pc.Name], null);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+                lst.Add(cn);
+            }
+            return lst;
+        }
+    }
+    /*
+   // [Authorize]
+    public class customerController : ApiController
+    {
+        
+        //private static Logger logger = LogManager.GetCurrentClassLogger();
+        public IEnumerable<customers> Get()
+        {
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                SqlCommand com = new SqlCommand("AuthAPI_Customers_get", con);
+                com.CommandType = CommandType.StoredProcedure;
+                SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                RetVal.Direction = ParameterDirection.ReturnValue;
+                SqlDataAdapter da = new SqlDataAdapter(com);
+                con.Open();
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                da.Dispose();
+                //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                DataTable dt = ds.Tables[0];
+                List<customers> ret = dt.ToListCollection<customers>();
+                return ret.AsEnumerable<customers>();
+            }
+        }
+        
+        
+        public customers Get(int? ID)
+        {
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                SqlCommand com = new SqlCommand("AuthAPI_Customers_get", con);
+                com.CommandType = CommandType.StoredProcedure;
+                SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                RetVal.Direction = ParameterDirection.ReturnValue;
+                com.Parameters.Add("ID", SqlDbType.Int).Value = ID;
+                SqlDataAdapter da = new SqlDataAdapter(com);
+                con.Open();
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                da.Dispose();
+                //      logger.Info("customers_get:@ID={0}, return={1}", ID, RetVal.Value);
+                if (ds.Tables.Count == 0)
+                    throw new HttpResponseException(new HttpResponseMessage(HttpStatusCode.BadRequest));
+                DataTable dt = ds.Tables[0];
+                if (dt.Rows.Count > 0)
+                    return dt.ToListCollection<customers>()[0];
+                else
+                    throw new HttpResponseException(new HttpResponseMessage(HttpStatusCode.BadRequest));
+            }
+
+        }
+        
+    }
+*/
+    /*
+        [Authorize]
+        public class productController : ApiController
+        {
+
+            [HttpPost]
+            [Route("api/BodyTypes/Raw")]
+            public string PostRawBuffer(string raw)
+            {
+                return raw;
+            }
+            //   private static Logger logger = LogManager.GetCurrentClassLogger();
+
+            // GET api/values
+            [HttpPost]
+            [Route("api/BodyTypes/JsonStringBody")]
+            public string JsonPlainBody([FromBody] string content)
+            {
+                return content;
+            }
+            [HttpPost]
+            [Route("api/BodyTypes/PJS1")]
+            public string PostJsonString([FromBody] string text)
+            {
+                return text;
+            }
+            [HttpPost]
+            [Route("api/BodyTypes/PJS")]
+            public string PostMultipleSimpleValues(string name, int value, DateTime entered, string action = null)
+            {
+                return string.Format("Name: {0}, Value: {1}, Date: {2}, Action: {3}", name, value, entered, action);
+            }
+
+
+            //   private static Logger logger = LogManager.GetCurrentClassLogger();
+            public IEnumerable<products> Get()
+            {
+                using (SqlConnection con = DbUtil.GetConnection())
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_Products_get", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //     logger.Info("products_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<products> ret = dt.ToListCollection<products>();
+                    return ret.AsEnumerable<products>();
+                }
+
+            }
+
+            public products Get(int? ID)
+            {
+                using (SqlConnection con = DbUtil.GetConnection())
+                {
+                    //int ou=Download();
+                    //List<RemoteFileInfo> lrfi = ListDirectory("");
+                    SqlCommand com = new SqlCommand("AuthAPI_Products_get", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("ID", SqlDbType.Int).Value = ID;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //     logger.Info("products_get:@ID={0}, return={1}", ID, RetVal.Value);
+                    if (ds.Tables.Count == 0)
+                        throw new HttpResponseException(new HttpResponseMessage(HttpStatusCode.BadRequest));
+                    DataTable dt = ds.Tables[0];
+                    if (dt.Rows.Count > 0)
+                        return dt.ToListCollection<products>()[0];
+                    else
+                        throw new HttpResponseException(new HttpResponseMessage(HttpStatusCode.BadRequest));
+                }
+
+            }
+
+            public int Download()
+            {
+                try
+                {
+                    // Setup session options
+                    SessionOptions sessionOptions = new SessionOptions
+                    {
+                        Protocol = Protocol.Ftp,
+                        HostName = "portal.p-rd.com",
+                        UserName = "AlsoAzure",
+                        Password = "AL8gDy7c#2sJz1",
+
+                    };
+
+                    using (Session session = new Session())
+                    {
+                        // Connect
+                        session.Open(sessionOptions);
+
+                                         // Upload files
+                                           TransferOptions transferOptions = new TransferOptions();
+                                           transferOptions.TransferMode = TransferMode.Binary;
+
+                                           TransferOperationResult transferResult;
+                                           transferResult =
+                                               session.PutFiles(@"dc\toupload\*", "/home/user/", false, transferOptions);
+
+                                           // Throw on any error
+                                           transferResult.Check();
+
+                                           // Print results
+                                           foreach (TransferEventArgs transfer in transferResult.Transfers)
+                                           {
+                                               Console.WriteLine("Upload of {0} succeeded", transfer.FileName);
+                                           }
+
+                        // Download files
+                        TransferOptions transferOptions = new TransferOptions();
+                        transferOptions.TransferMode = TransferMode.Binary;
+
+                        TransferOperationResult transferResult;
+                        transferResult =
+                            session.GetFiles("/processed/test.txt", @"c:\download\", false, transferOptions);
+
+                        // Throw on any error
+                        transferResult.Check();
+
+                        // Print results
+                        foreach (TransferEventArgs transfer in transferResult.Transfers)
+                        {
+                            Console.WriteLine("Download of {0} succeeded", transfer.FileName);
+                        }
+                    }
+
+                    return 0;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error: {0}", e);
+                    return 1;
+                }
+
+            }
+
+        }
+        */
+    /*
+    public class ftpFileController : ApiController
+    {
+        public IEnumerable<ftpFiles> Get()
+        {
+            List<ftpFiles> ret = new List<ftpFiles>();
+            try
+            {
+                // Setup session options
+                SessionOptions sessionOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Ftp,
+                    HostName = "portal.p-rd.com",
+                    UserName = "AlsoAzure",
+                    Password = "AL8gDy7c#2sJz1",
+
+                };
+
+                using (Session session = new Session())
+                {
+                    // Connect
+                    session.Open(sessionOptions);
+
+                    RemoteDirectoryInfo directory =
+                        session.ListDirectory("/Processed/");
+
+                    ftpFiles instance = new ftpFiles();
+                    foreach (RemoteFileInfo fileInfo in directory.Files)
+                    {
+                        instance.Name = fileInfo.Name;
+//                        instance.FullName = fileInfo.FullName;
+                        instance.FileType = fileInfo.FileType.ToString();
+                        instance.Length = fileInfo.Length;
+//                        instance.Length32 = fileInfo.Length32;
+//                        instance.LastWriteTime = fileInfo.LastWriteTime.ToString();
+                        //instance.FilePermissions = fileInfo.FilePermissions.ToString();
+                        //instance.Owner = fileInfo.Owner;
+                        //instance.Group = fileInfo.Group;
+                        //instance.IsDirectory = fileInfo.IsDirectory.ToString();
+                        //instance.IsThisDirectory = fileInfo.IsThisDirectory.ToString();
+                        //instance.IsParentDirectory = fileInfo.IsParentDirectory.ToString();
+                        ret.Add(instance);
+                        Console.WriteLine(
+                            "{0} with size {1}, permissions {2} and last modification at {3}",
+                            fileInfo.Name, fileInfo.Length, fileInfo.FilePermissions,
+                            fileInfo.LastWriteTime);
+                    }
+                    
+                    //return ret.AsEnumerable<RemoteFileInfo>();
+                }
+                
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error: {0}", e);
+                //return 1;
+            }
+            return ret.AsEnumerable<ftpFiles>();
+
+        }
+
+    }
+*/
+
+    /*
+public class telephoneController : ApiController
+{
+
+    public IEnumerable<telephones> Get()
+    {
+        using (SqlConnection con = DbUtil.GetConnection())
+        {
+            SqlCommand com = new SqlCommand("AuthAPI_Telephones_get", con);
+            com.CommandType = CommandType.StoredProcedure;
+            SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+            RetVal.Direction = ParameterDirection.ReturnValue;
+            SqlDataAdapter da = new SqlDataAdapter(com);
+            con.Open();
+            DataSet ds = new DataSet();
+            da.Fill(ds);
+            da.Dispose();
+            //      logger.Info("customers_get:, return={0}", RetVal.Value);
+            DataTable dt = ds.Tables[0];
+            List<telephones> ret = dt.ToListCollection<telephones>();
+            return ret.AsEnumerable<telephones>();
+        }
+
+    }
+
+    public IEnumerable<telephones> Get(string ID)
+    {
+        using (SqlConnection con = DbUtil.GetConnection())
+        {
+            SqlCommand com = new SqlCommand("AuthAPI_Telephones_get", con);
+            com.CommandType = CommandType.StoredProcedure;
+            SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+            RetVal.Direction = ParameterDirection.ReturnValue;
+            com.Parameters.Add("TelephoneNumber", SqlDbType.VarChar, 20).Value = ID;
+            SqlDataAdapter da = new SqlDataAdapter(com);
+            con.Open();
+            DataSet ds = new DataSet();
+            da.Fill(ds);
+            da.Dispose();
+            DataTable dt = ds.Tables[0];
+            List<telephones> ret = dt.ToListCollection<telephones>();
+            return ret.AsEnumerable<telephones>();
+        }
+
+    }
+
+}
+*/
+
+    /*
+        public class sessionController : ApiController
+        {
+
+            [HttpPost]
+            [Route("api/Login")]
+            public string Authenticate(LoginData login)
+            {
+                string username = login.Username;
+                string password = login.Password;
+                return string.Format("NewToken: (" + username + ") (" + password + ")");
+            }
+        }
+        */
+
+    /*
+class Validator2
+{
+    static string page = "";
+    public static async void validate(string call)
+    {
+        page = call;
+        // Run the task.
+        System.Threading.Tasks.Task.Run(new Action(DownloadPageAsync));
+        Console.ReadLine();
+    }
+
+    static HttpClient _client = new HttpClient();
+
+    static async void DownloadPageAsync()
+    {
+        // Use static HttpClient to avoid exhausting system resources for network connections.
+        var result = await _client.GetAsync(page);
+        // Write status code.
+        Console.WriteLine("STATUS CODE: " + result.StatusCode);
+    }
+}
+
+
+class Validator
+{
+    static string page = "";
+    public static async void validate(string call)
+    {
+        page = call;
+        // Run the task.
+        // System.Threading.Tasks.Task.Run(new Action(DownloadPageAsync));
+        //Console.ReadLine();
+        RunAsync();
+    }
+
+    static HttpClient client = new HttpClient();
+
+    static async Task<Uri> CreateProductAsync(string product)
+    {
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "Token", product);
+        response.EnsureSuccessStatusCode();
+
+        // return URI of the created resource.
+        return response.Headers.Location;
+    }
+
+    static async Task RunAsync()
+    {
+        // Update port # in the following line.
+        client.BaseAddress = new Uri("http://localhost:49333/");
+        client.DefaultRequestHeaders.Accept.Clear();
+        client.DefaultRequestHeaders.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/json"));
+
+        try
+        {
+
+            var url = await CreateProductAsync(page);
+            Console.WriteLine($"Created at {url}");
+
+            // Get the product
+            //product = await GetProductAsync(url.PathAndQuery);
+            //ShowProduct(product);
+
+            // Update the product
+            //Console.WriteLine("Updating price...");
+            //product.Price = 80;
+            //await UpdateProductAsync(product);
+
+            // Get the updated product
+            //product = await GetProductAsync(url.PathAndQuery);
+            //ShowProduct(product);
+
+            // Delete the product
+            //var statusCode = await DeleteProductAsync(product.Id);
+            //Console.WriteLine($"Deleted (HTTP Status = {(int)statusCode})");
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+
+        Console.ReadLine();
+    }
+}
+
+    [Authorize]
+    class Validator : ApiController
+    {
+        static string page = "";
+        public static void validate(string call)
+        {
+            
+        }
+    }
+    */
+
+    //[Authorize]
+    //[RoutePrefix("api")]
+    public class IntelligentBillingAPIController : ApiController
+    {
+        private static readonly RNGCryptoServiceProvider random = new RNGCryptoServiceProvider();
+
+        public string GenerateToken(string user)
+        {
+            int length = 240;
+            string token = "";
+            try
+            {
+
+                // We chose an encoding that fits 6 bits into every character,
+                // so we can fit length*6 bits in total.
+                // Each byte is 8 bits, so...
+                int sufficientBufferSizeInBytes = (length * 6 + 7) / 8;
+
+                var buffer = new byte[sufficientBufferSizeInBytes];
+                random.GetBytes(buffer);
+                token = Convert.ToBase64String(buffer).Substring(0, length);
+                /*
+                Microsoft.Owin.Security.AuthenticationTicket at = new Microsoft.Owin.Security.AuthenticationTicket(new ClaimsIdentity("Bearer", "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"),
+                new Microsoft.Owin.Security.AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    IsPersistent = true,
+                    IssuedUtc = DateTime.UtcNow,
+                    ExpiresUtc = DateTime.UtcNow.AddDays(1) // whenever you want your new token's expiration to happen
+                });
+
+                //// add any claims you want here like this:
+                //Claim c = new Claim("user", "generic");
+                //var claims = new List<Claim>();
+                //claims.Add(new Claim(ClaimTypes.Name, "Brock"));
+                //claims.Add(new Claim(ClaimTypes.Email, "brockallen@gmail.com"));
+                //var id = new ClaimsIdentity(claims, Microsoft.AspNet.Identity.DefaultAuthenticationTypes.ApplicationCookie);
+                
+                at.Identity.AddClaim(new Claim(ClaimTypes.Email, user));
+                // and so on
+                OAuthBearerAuthenticationOptions oabao = new OAuthBearerAuthenticationOptions();
+                AuthenticationTicket ticket = AccessTokenFormat.Unprotect("");
+                oabao.AccessTokenFormat = ticket;
+                token = oabao.AccessTokenFormat.Protect(at);
+                */
+            }
+            catch(Exception e)
+            {
+
+            }
+
+            // You now have the token string in the token variable.
+            return token;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        [HttpPost]
+        [Route("api/Login")]
+        public IEnumerable<APIResults_Login_Output> Login(APIResults_Login_Input search)
+        {
+            string UserName = "";
+            string Password = "";
+            /*  ClaimsIdentity p
+
+              var oauthOptions = new OAuthAuthorizationServerOptions()
+              {
+                  TokenEndpointPath = new PathString("/Token"),
+                  Provider = new SimpleAuthorizationServerProvider(),
+                  AccessTokenFormat = new TicketDataFormat(app.CreateDataProtector(typeof(OAuthAuthorizationServerMiddleware).Namespace, "Access_Token", "v1")),
+                  RefreshTokenFormat = new TicketDataFormat(app.CreateDataProtector(typeof(OAuthAuthorizationServerMiddleware).Namespace, "Refresh_Token", "v1")),
+                  AccessTokenProvider = new AuthenticationTokenProvider(),
+                  RefreshTokenProvider = new AuthenticationTokenProvider(),
+                  AccessTokenExpireTimeSpan = TimeSpan.FromDays(14),
+                  AllowInsecureHttp = true
+              };
+
+              app.UseOAuthAuthorizationServer(oauthOptions);
+              app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions());
+            */
+            string Token = Guid.NewGuid().ToString();
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.UserName))
+                        UserName = search.UserName;
+                    if (!String.IsNullOrEmpty(search.Password))
+                        Password = search.Password;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    Token = GenerateToken(UserName);
+                    SqlCommand com = new SqlCommand("AuthAPI_Login_Post", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("UserName", SqlDbType.VarChar).Value = UserName;
+                    com.Parameters.Add("Password", SqlDbType.VarChar).Value = Password;
+                    com.Parameters.Add("Token", SqlDbType.VarChar).Value = Token;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_Login_Output> ret = dt.ToListCollection<APIResults_Login_Output>();
+                    return ret.AsEnumerable<APIResults_Login_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_Login_Output>()).AsEnumerable<APIResults_Login_Output>();
+                }
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public IEnumerable<APIResults_Validate_Output> Validate(string token, string method)
+        {
+            APIResults_Validate_Input search = new APIResults_Validate_Input();
+            search.LoginToken = token;
+            search.MethodName = method;
+            return Validate(search);
+        }
+        public IEnumerable<APIResults_Validate_Output> Validate(APIResults_Validate_Input search)
+        {
+
+
+            string LoginToken = "";
+            string MethodName = "";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.LoginToken))
+                        LoginToken = search.LoginToken;
+                    if (!String.IsNullOrEmpty(search.MethodName))
+                        MethodName = search.MethodName;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+
+
+                    SqlCommand com = new SqlCommand("AuthAPI_Validate_Post", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("LoginToken", SqlDbType.VarChar).Value = LoginToken;
+                    com.Parameters.Add("MethodName", SqlDbType.VarChar).Value = MethodName;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_Validate_Output> ret = dt.ToListCollection<APIResults_Validate_Output>();
+                    return ret.AsEnumerable<APIResults_Validate_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_Validate_Output>()).AsEnumerable<APIResults_Validate_Output>();
+                }
+            }
+        }
+        /*
+        [Authorize]
+        [HttpPost]
+        public void ValidationFailed(APIResults_Validate_Input search)
+        {
+
+
+            string LoginToken = "";
+            string MethodName = "";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.LoginToken))
+                        LoginToken = search.LoginToken;
+                    if (!String.IsNullOrEmpty(search.MethodName))
+                        MethodName = search.MethodName;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            //return (new List<APIResults_Validate_Output>()).AsEnumerable<APIResults_Validate_Output>();
+        }
+        */
+        public IEnumerable<APIResults_Error_Output> genErrorResult(string code,string message)
+        {
+            List<APIResults_Error_Output> errList = new List<APIResults_Error_Output>();
+            APIResults_Error_Output err = new APIResults_Error_Output();
+            err.Code = code;
+            err.Message = message;
+            errList.Add(err);
+            return (errList.AsEnumerable<APIResults_Error_Output>());
+        }
+
+        /* Remove for PREACT
+        /// <summary>
+        /// Retrieve all customer records (filtered by search parameters).
+        /// </summary>
+        [HttpPost]
+        [Route("api/GetCustomerList2a")]
+        public IEnumerable<object> GetCustList2(APIResults_CustList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string CustomerName = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetCustList2");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch(Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+                
+                
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.CustomerName))
+                        CustomerName = search.CustomerName;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection_Target(DBConnectionString))
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerList_Post", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("CustomerName", SqlDbType.VarChar).Value = CustomerName;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustList_Output> ret = dt.ToListCollection<APIResults_CustList_Output>();
+                    return ret.AsEnumerable<APIResults_CustList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return genErrorResult("500", "Error encountered. Please contact administrator");
+                }
+            }
+        }
+        //string custList= "GetCustomerList";
+        [HttpPost]
+        [Route("api/GetCustomerList2")]
+        public IEnumerable<object> GetCustList_cSec(APIResults_CustList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string CustomerName = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetCustomerList");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.CustomerName))
+                        CustomerName = search.CustomerName;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                  SqlCommand com = new SqlCommand("AuthAPI_GetCustomerList_Post", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("CustomerName", SqlDbType.VarChar).Value = CustomerName;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustList_Output> ret = dt.ToListCollection<APIResults_CustList_Output>();
+                    return ret.AsEnumerable<APIResults_CustList_Output>();
+                }
+                catch (Exception e)
+                {
+                    //return (new List<APIResults_CustList_Output>()).AsEnumerable<APIResults_CustList_Output>();
+                    return genErrorResult("500", "Error encountered (. Please contact administrator");
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Retrieve the customer details for the customers (filtered by input parameters).
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetCustomerDetails2")]
+        public IEnumerable<object> GetCustomerDetails_cSec(APIResults_CustDetails_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string ParentAccountNumber = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetCustomerDetails");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.ParentAccountNumber))
+                        ParentAccountNumber = search.ParentAccountNumber;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerDetails_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("ParentAccountNumber", SqlDbType.VarChar).Value = ParentAccountNumber;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustDetails_Output> ret = dt.ToListCollection<APIResults_CustDetails_Output>();
+                    return ret.AsEnumerable<APIResults_CustDetails_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_CustDetails_Output>()).AsEnumerable<APIResults_CustDetails_Output>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the list of products (filtered by input parameters).
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetProductList2")]
+        public IEnumerable<object> GetProductDetails_cSec(APIResults_ProdList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Product = "";
+            string Date = "20000101";
+            string Invoice = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetProductList");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("ProductCode", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_ProdList_Output> ret = dt.ToListCollection<APIResults_ProdList_Output>();
+                    return ret.AsEnumerable<APIResults_ProdList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_ProdList_Output>()).AsEnumerable<APIResults_ProdList_Output>();
+                }
+            }
+        }
+        */
+        // POST api/Account/ChangePassword
+        [HttpPost]
+        [Route("api/GetTestResponse")]
+        //public IEnumerable<object>  TestResponse(APIResults_CustList_Input search)
+        public object TestResponse(APIResults_CustDetails_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string ParentAccountNumber = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.ParentAccountNumber))
+                        ParentAccountNumber = search.ParentAccountNumber;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+
+                //List<IHttpActionResult> errList = new List<IHttpActionResult>();
+                //IHttpActionResult err = BadRequest(Message);
+                //err.Code = code;
+                //err.Message = message;
+                //errList.Add(err);
+                //return (errList.AsEnumerable<IHttpActionResult>());
+                //return errList;
+                //return BadRequest(Message);
+                return StatusCode(HttpStatusCode.NotAcceptable);
+                //return ObjectResult(HttpStatusCode.Unauthorized, "Invalid token");
+            }
+            //List<IHttpActionResult> okList = new List<IHttpActionResult>();
+            //IHttpActionResult ok = Ok();
+            //err.Code = code;
+            //err.Message = message;
+            //okList.Add(ok);
+            //return GetCustList_cSec2(search);
+            return Ok(GetCustList_cSec3(search));
+        }
+        public IEnumerable<object> GetCustList_cSec3(APIResults_CustDetails_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string ParentAccountNumber = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.ParentAccountNumber))
+                        ParentAccountNumber = search.ParentAccountNumber;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+
+                string[] codeMessage = DateValidation(Date);
+                Code = codeMessage[0];
+                Message = codeMessage[1];
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerDetails_Test", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("ParentAccountNumber", SqlDbType.VarChar).Value = ParentAccountNumber;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustDetails_Output_Test> ret = dt.ToListCollection<APIResults_CustDetails_Output_Test>();
+                    return ret.AsEnumerable<APIResults_CustDetails_Output_Test>();
+                }
+                catch (Exception e)
+                {
+                    //return (new List<APIResults_CustList_Output>()).AsEnumerable<APIResults_CustList_Output>();
+                    return genErrorResult("500", "Error encountered (Please contact administrator");
+                }
+            }
+        }
+
+
+        /*  remove advanced for PREACT - 20200512
+
+
+
+        /// <summary>
+        /// Get product instances assigned to customer (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetCustomerProductList2")]
+        public IEnumerable<object> GetCustomerProductList_cSec(APIResults_CustProdList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Invoice = "";
+            string Product = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetCustomerProductList");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    com.Parameters.Add("Product", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustProdList_Output> ret = dt.ToListCollection<APIResults_CustProdList_Output>();
+                    return ret.AsEnumerable<APIResults_CustProdList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_CustProdList_Output>()).AsEnumerable<APIResults_CustProdList_Output>();
+                }
+            }
+        }
+        /// <summary>
+        /// Get product instances assigned to telephone number (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetTelephoneProductList2")]
+        public IEnumerable<object> GetTelephoneProductList_cSec(APIResults_TelProdList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Invoice = "";
+            string Product = "";
+            string Telephone = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetTelephoneProductList");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Telephone))
+                        Telephone = search.Telephone;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetTelephoneProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Telephone", SqlDbType.VarChar).Value = Telephone;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    com.Parameters.Add("Product", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_TelProdList_Output> ret = dt.ToListCollection<APIResults_TelProdList_Output>();
+                    return ret.AsEnumerable<APIResults_TelProdList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_TelProdList_Output>()).AsEnumerable<APIResults_TelProdList_Output>();
+                }
+            }
+        }
+        /// <summary>
+        /// Get invoices assigned to customer (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetInvoiceList2")]
+        public IEnumerable<object> GetInvoiceList_cSec(APIResults_InvList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetInvoiceList");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetInvoiceList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_InvList_Output> ret = dt.ToListCollection<APIResults_InvList_Output>();
+                    return ret.AsEnumerable<APIResults_InvList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_InvList_Output>()).AsEnumerable<APIResults_InvList_Output>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get invoice details \ lines for the specified invoice. 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetInvoiceLines2")]
+        public IEnumerable<object> GetInvoiceLines_cSec(APIResults_InvLines_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string InvoiceNumber = "0";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetInvoiceLines");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.InvoiceNumber))
+                        InvoiceNumber = search.InvoiceNumber;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetInvoiceLines_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("InvoiceNumber", SqlDbType.VarChar).Value = InvoiceNumber;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_InvLines_Output> ret = dt.ToListCollection<APIResults_InvLines_Output>();
+                    return ret.AsEnumerable<APIResults_InvLines_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_InvLines_Output>()).AsEnumerable<APIResults_InvLines_Output>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the list of telephone numbers assigned to a customer (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetCustomerTelephoneList2")]
+        public IEnumerable<object> GetCustomerTelephoneList_cSec(APIResults_CustTelList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetCustomerTelephoneList");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerTelephoneList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustTelList_Output> ret = dt.ToListCollection<APIResults_CustTelList_Output>();
+                    return ret.AsEnumerable<APIResults_CustTelList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_CustTelList_Output>()).AsEnumerable<APIResults_CustTelList_Output>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the latest chargeable lines for a customer. 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetDailyCustomerProduct2")]
+        public IEnumerable<object> GetDailyCustomerProduct_cSec(APIResults_DailyCustProd_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetDailyCustomerProduct");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetDailyCustomerProduct_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_DailyCustProd_Output> ret = dt.ToListCollection<APIResults_DailyCustProd_Output>();
+                    return ret.AsEnumerable<APIResults_DailyCustProd_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_DailyCustProd_Output>()).AsEnumerable<APIResults_DailyCustProd_Output>();
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Get the changes for chargeable lines for a customer since a specific date. 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("api/GetDailyCustomerProductChanges2")]
+        public IEnumerable<object> GetDailyCustomerProductChanges_cSec(APIResults_DailyCustProdChanges_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                try
+                {
+                    IEnumerable<APIResults_Validate_Output> valRes = Validate(Request.Headers.Authorization.ToString(), "GetDailyCustomerProductChanges");
+                    DBConnectionString = valRes.ElementAt(0).ConnectionString;
+                    Code = valRes.ElementAt(0).Code;
+                    Message = valRes.ElementAt(0).Message;
+                }
+                catch (Exception e1)
+                {
+                    return genErrorResult(Code, Message);
+                }
+
+
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetDailyCustomerProductChanges_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_DailyCustProdChanges_Output> ret = dt.ToListCollection<APIResults_DailyCustProdChanges_Output>();
+                    return ret.AsEnumerable<APIResults_DailyCustProdChanges_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_DailyCustProdChanges_Output>()).AsEnumerable<APIResults_DailyCustProdChanges_Output>();
+                }
+            }
+        }
+
+        */
+
+
+
+
+
+
+        /// <summary>
+        /// Retrieve all customer records (filtered by search parameters).
+        /// </summary>
+
+        /* Remove FOR PREACT
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetCustomerList")]
+        public IEnumerable<APIResults_CustList_Output> GetCustList(APIResults_CustList_Input search)
+        {
+           // string loginToken = Request.Headers.Authorization.ToString();
+
+
+            string CustomerName = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.CustomerName))
+                        CustomerName = search.CustomerName;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+
+
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerList_Post", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("CustomerName", SqlDbType.VarChar).Value = CustomerName;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustList_Output> ret = dt.ToListCollection<APIResults_CustList_Output>();
+                    return ret.AsEnumerable<APIResults_CustList_Output>();
+                }catch(Exception e)
+                {
+                    return (new List<APIResults_CustList_Output>()).AsEnumerable<APIResults_CustList_Output>();
+                }
+            }
+        }
+*/
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetCustomerList")]
+        public object GetCustomerList_Validation(APIResults_CustList_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetCustList_cSec2(search));
+        }
+        public IEnumerable<object> GetCustList_cSec2(APIResults_CustList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string CustomerName = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.CustomerName))
+                        CustomerName = search.CustomerName;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+
+                string[] codeMessage = DateValidation(Date);
+                Code = codeMessage[0];
+                Message = codeMessage[1];
+                if (!Code.Equals("200"))
+                {
+                    return genErrorResult(Code, Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerList_Post", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.Int);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("CustomerName", SqlDbType.VarChar).Value = CustomerName;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustList_Output> ret = dt.ToListCollection<APIResults_CustList_Output>();
+                    return ret.AsEnumerable<APIResults_CustList_Output>();
+                }
+                catch (Exception e)
+                {
+                    //return (new List<APIResults_CustList_Output>()).AsEnumerable<APIResults_CustList_Output>();
+                    return genErrorResult("500", "Error encountered (. Please contact administrator");
+                }
+            }
+        }
+
+        private static string[] DateValidation(string date)
+        {
+            DateTime dt;
+
+            bool isValid = DateTime.TryParseExact(
+                date,
+                "yyyyMMdd",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out dt);
+            string[] codeMessage = new string[]{ "406", "Date Format Incorrect" };
+            //string pattern = @"20[0-9]{2}.[0-2]{2}.[0-3]{1}.[0-9]{1}";
+            //Match m = Regex.Match(date, pattern, RegexOptions.IgnoreCase);
+            //if (m.Success)
+            if (isValid)
+                codeMessage = new string[]{ "200",""};
+            return codeMessage;
+        }
+
+
+
+        /// <summary>
+        /// Retrieve the customer details for the customers (filtered by input parameters).
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+         /* REMOVE for PREACT
+ 
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetCustomerDetails")]
+        public IEnumerable<APIResults_CustDetails_Output> GetCustomerDetails(APIResults_CustDetails_Input search)
+        {
+            string ParentAccountNumber = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.ParentAccountNumber))
+                        ParentAccountNumber = search.ParentAccountNumber;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerDetails_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("ParentAccountNumber", SqlDbType.VarChar).Value = ParentAccountNumber;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustDetails_Output> ret = dt.ToListCollection<APIResults_CustDetails_Output>();
+                    return ret.AsEnumerable<APIResults_CustDetails_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_CustDetails_Output>()).AsEnumerable<APIResults_CustDetails_Output>();
+                }
+            }
+        }
+        */
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetCustomerDetails")]
+        public object GetCustomerDetails_Validation(APIResults_CustDetails_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetCustomerDetails_cSec2(search));
+        }
+        public IEnumerable<object> GetCustomerDetails_cSec2(APIResults_CustDetails_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string ParentAccountNumber = "";
+            string AccountNumber = "";
+            string Date = "20000101";
+            try
+            {
+
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.ParentAccountNumber))
+                        ParentAccountNumber = search.ParentAccountNumber;
+                    if (!String.IsNullOrEmpty(search.AccountNumber))
+                        AccountNumber = search.AccountNumber;
+
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    /* Code = "100";
+                     Message = "Date Format Incorrect";
+                     string pattern = @"20[0-9]{6}";
+                     Match m = Regex.Match(Date, pattern, RegexOptions.IgnoreCase);
+                     if (m.Success)
+                         Code = "200";
+                         */
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerDetails_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("ParentAccountNumber", SqlDbType.VarChar).Value = ParentAccountNumber;
+                    com.Parameters.Add("AccountNumber", SqlDbType.VarChar).Value = AccountNumber;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustDetails_Output_Extra> ret = dt.ToListCollection<APIResults_CustDetails_Output_Extra>();
+                    return ret.AsEnumerable<APIResults_CustDetails_Output_Extra>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_CustDetails_Output_Extra>()).AsEnumerable<APIResults_CustDetails_Output_Extra>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the list of products (filtered by input parameters).
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+ /* Remove for Preact
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetProductList")]
+        public IEnumerable<APIResults_ProdList_Output> GetProductDetails(APIResults_ProdList_Input search)
+        {           
+            string Product = "";
+            string Date = "20000101";
+            string Invoice = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("ProductCode", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_ProdList_Output> ret = dt.ToListCollection<APIResults_ProdList_Output>();
+                    return ret.AsEnumerable<APIResults_ProdList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_ProdList_Output>()).AsEnumerable<APIResults_ProdList_Output>();
+                }
+            }
+        }
+        */
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetProductList")]
+        public object GetProductList_Validation(APIResults_ProdList_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetProductDetails_cSec2(search));
+        }
+        public IEnumerable<object> GetProductDetails_cSec2(APIResults_ProdList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Product = "";
+            string Date = "20000101";
+            string Invoice = "20000101";
+            try
+            {
+               
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("ProductCode", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_ProdList_Output> ret = dt.ToListCollection<APIResults_ProdList_Output>();
+                    return ret.AsEnumerable<APIResults_ProdList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_ProdList_Output>()).AsEnumerable<APIResults_ProdList_Output>();
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Get product instances assigned to customer (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        /* Remove for Preact
+                [Authorize]
+                [HttpPost]
+                [Route("api/GetCustomerProductList")]
+                public IEnumerable<APIResults_CustProdList_Output> GetCustomerProductList(APIResults_CustProdList_Input search)
+                {
+                    string Customer = "";
+                    string Invoice = "";
+                    string Product = "";
+                    string Date = "20000101";
+                    try
+                    {
+                        if (search != null)
+                        {
+                            if (!String.IsNullOrEmpty(search.Customer))
+                                Customer = search.Customer;
+                            if (!String.IsNullOrEmpty(search.Invoice))
+                                Invoice = search.Invoice;
+                            if (!String.IsNullOrEmpty(search.Product))
+                                Product = search.Product;
+                            if (!String.IsNullOrEmpty(search.Date))
+                                Date = search.Date;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    using (SqlConnection con = DbUtil.GetConnection())
+                    {
+                        try
+                        {
+                            SqlCommand com = new SqlCommand("AuthAPI_GetCustomerProductList_POST", con);
+                            com.CommandType = CommandType.StoredProcedure;
+                            SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                            RetVal.Direction = ParameterDirection.ReturnValue;
+                            com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                            com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                            com.Parameters.Add("Product", SqlDbType.VarChar).Value = Product;
+                            com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                            SqlDataAdapter da = new SqlDataAdapter(com);
+                            con.Open();
+                            DataSet ds = new DataSet();
+                            da.Fill(ds);
+                            da.Dispose();
+                            //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                            DataTable dt = ds.Tables[0];
+                            List<APIResults_CustProdList_Output> ret = dt.ToListCollection<APIResults_CustProdList_Output>();
+                            return ret.AsEnumerable<APIResults_CustProdList_Output>();
+                        }
+                        catch (Exception e)
+                        {
+                            return (new List<APIResults_CustProdList_Output>()).AsEnumerable<APIResults_CustProdList_Output>();
+                        }
+                    }
+                }
+           */
+
+        /* Remove for Preact
+                [Authorize]
+                [HttpPost]
+                [Route("api/GetCustomerProductList")]
+                public IEnumerable<object> GetCustomerProductList_cSec2(APIResults_CustProdList_Input search)
+                {
+                    string DBConnectionString = "";
+                    string Code = "401";
+                    string Message = "Authorisation Failed";
+                    string Customer = "";
+                    string Invoice = "";
+                    string Product = "";
+                    string Date = "20000101";
+                    try
+                    {
+
+                        if (search != null)
+                        {
+                            if (!String.IsNullOrEmpty(search.Customer))
+                                Customer = search.Customer;
+                            if (!String.IsNullOrEmpty(search.Invoice))
+                                Invoice = search.Invoice;
+                            if (!String.IsNullOrEmpty(search.Product))
+                                Product = search.Product;
+                            if (!String.IsNullOrEmpty(search.Date))
+                                Date = search.Date;
+
+                            string[] codeMessage = DateValidation(Date);
+                            Code = codeMessage[0];
+                            Message = codeMessage[1];
+                            if (!Code.Equals("200"))
+                            {
+                                return genErrorResult(Code, Message);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    using (SqlConnection con = DbUtil.GetConnection())
+                    {
+                        try
+                        {
+                            SqlCommand com = new SqlCommand("AuthAPI_GetCustomerProductList_POST", con);
+                            com.CommandType = CommandType.StoredProcedure;
+                            SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                            RetVal.Direction = ParameterDirection.ReturnValue;
+                            com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                            com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                            com.Parameters.Add("Product", SqlDbType.VarChar).Value = Product;
+                            com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                            SqlDataAdapter da = new SqlDataAdapter(com);
+                            con.Open();
+                            DataSet ds = new DataSet();
+                            da.Fill(ds);
+                            da.Dispose();
+                            //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                            DataTable dt = ds.Tables[0];
+                            List<APIResults_CustProdList_Output> ret = dt.ToListCollection<APIResults_CustProdList_Output>();
+                            return ret.AsEnumerable<APIResults_CustProdList_Output>();
+                        }
+                        catch (Exception e)
+                        {
+                            return (new List<APIResults_CustProdList_Output>()).AsEnumerable<APIResults_CustProdList_Output>();
+                        }
+                    }
+                }
+            */
+
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetCustomerProductList")]
+        public object GetCustomerProductlist_Validation(APIResults_CustProdList_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetCustomerProductList_cSec2(search));
+        }
+        public IEnumerable<object> GetCustomerProductList_cSec2(APIResults_CustProdList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Invoice = "";
+            string Product = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    com.Parameters.Add("Product", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustProdList_Output> ret = dt.ToListCollection<APIResults_CustProdList_Output>();
+                    return ret.AsEnumerable<APIResults_CustProdList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_CustProdList_Output>()).AsEnumerable<APIResults_CustProdList_Output>();
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Get product instances assigned to telephone number (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        /*Remove for PREACT
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetTelephoneProductList")]
+        public IEnumerable<APIResults_TelProdList_Output> GetTelephoneProductList(APIResults_TelProdList_Input search)
+        {
+            string Invoice = "";
+            string Product = "";
+            string Telephone = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Telephone))
+                        Telephone = search.Telephone;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetTelephoneProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Telephone", SqlDbType.VarChar).Value = Telephone;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    com.Parameters.Add("Product", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_TelProdList_Output> ret = dt.ToListCollection<APIResults_TelProdList_Output>();
+                    return ret.AsEnumerable<APIResults_TelProdList_Output>();
+                }catch(Exception e)
+                {
+                    return (new List<APIResults_TelProdList_Output>()).AsEnumerable<APIResults_TelProdList_Output>();
+                }
+            }
+        }
+        */
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetTelephoneProductList")]
+        public object GetTelephoneProductList_Validation(APIResults_TelProdList_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetTelephoneProductList_cSec2(search));
+        }
+        public IEnumerable<object> GetTelephoneProductList_cSec2(APIResults_TelProdList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Invoice = "";
+            string Product = "";
+            string Telephone = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Invoice))
+                        Invoice = search.Invoice;
+                    if (!String.IsNullOrEmpty(search.Product))
+                        Product = search.Product;
+                    if (!String.IsNullOrEmpty(search.Telephone))
+                        Telephone = search.Telephone;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetTelephoneProductList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Telephone", SqlDbType.VarChar).Value = Telephone;
+                    com.Parameters.Add("Invoice", SqlDbType.VarChar).Value = Invoice;
+                    com.Parameters.Add("Product", SqlDbType.VarChar).Value = Product;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_TelProdList_Output> ret = dt.ToListCollection<APIResults_TelProdList_Output>();
+                    return ret.AsEnumerable<APIResults_TelProdList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_TelProdList_Output>()).AsEnumerable<APIResults_TelProdList_Output>();
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Get invoices assigned to customer (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+
+
+        /* REMOVE FOR PREACT
+        [HttpPost]
+        [Route("api/GetInvoiceList")]
+        public IEnumerable<APIResults_InvList_Output> GetInvoiceList(APIResults_InvList_Input search)
+        {
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetInvoiceList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_InvList_Output> ret = dt.ToListCollection<APIResults_InvList_Output>();
+                    return ret.AsEnumerable<APIResults_InvList_Output>();
+                } catch(Exception e)
+                {
+                    return (new List<APIResults_InvList_Output>()).AsEnumerable<APIResults_InvList_Output>();
+                }
+            }
+        }
+*/
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetInvoiceList")]
+        public object GetInvoiceList_Validation(APIResults_InvList_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetInvoiceList_cSec2(search));
+        }
+        public IEnumerable<object> GetInvoiceList_cSec2(APIResults_InvList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetInvoiceList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_InvList_Output> ret = dt.ToListCollection<APIResults_InvList_Output>();
+                    return ret.AsEnumerable<APIResults_InvList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_InvList_Output>()).AsEnumerable<APIResults_InvList_Output>();
+                }
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Get invoice details \ lines for the specified invoice. 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        /* REMOVE FOR PREACT
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetInvoiceLines")]
+        public IEnumerable<APIResults_InvLines_Output> GetInvoiceLines(APIResults_InvLines_Input search)
+        {
+            string InvoiceNumber = "0";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.InvoiceNumber))
+                        InvoiceNumber = search.InvoiceNumber;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetInvoiceLines_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("InvoiceNumber", SqlDbType.VarChar).Value = InvoiceNumber;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_InvLines_Output> ret = dt.ToListCollection<APIResults_InvLines_Output>();
+                return ret.AsEnumerable<APIResults_InvLines_Output>();
+                } catch (Exception e)
+                {
+                    return (new List<APIResults_InvLines_Output>()).AsEnumerable<APIResults_InvLines_Output>();
+                }
+        }
+        }
+        */
+        /*
+                [HttpPost]
+                [Route("api/GetInvoice")]
+                public IEnumerable<products> GetInvoice(SearchData search)
+                {
+                    string ProductCode = "";
+                    string Date = "20000101";
+                    try
+                    {
+                        if (search != null)
+                        {
+                            if (!String.IsNullOrEmpty(search.ProductCode))
+                                ProductCode = search.ProductCode;
+                            if (!String.IsNullOrEmpty(search.Date))
+                                Date = search.Date;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    using (SqlConnection con = DbUtil.GetConnection())
+                    {
+                        try
+                        {
+                            SqlCommand com = new SqlCommand("AuthAPI_GetProductList_POST", con);
+                            com.CommandType = CommandType.StoredProcedure;
+                            SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                            RetVal.Direction = ParameterDirection.ReturnValue;
+                            com.Parameters.Add("ProductCode", SqlDbType.VarChar).Value = ProductCode;
+                            com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                            SqlDataAdapter da = new SqlDataAdapter(com);
+                            con.Open();
+                            DataSet ds = new DataSet();
+                            da.Fill(ds);
+                            da.Dispose();
+                            //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                            DataTable dt = ds.Tables[0];
+                            List<products> ret = dt.ToListCollection<products>();
+                            return ret.AsEnumerable<products>();
+                        }catch(Exception e)
+                        {
+                            return (new List<products>()).AsEnumerable<products>();
+                        }
+                    }
+                }
+                */
+
+
+        /// <summary>
+        /// Get the list of telephone numbers assigned to a customer (filtered by input parameters). 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        /*REMOVE FOR PREACT
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetCustomerTelephoneList")]
+        public IEnumerable<APIResults_CustTelList_Output> GetCustomerTelephoneList(APIResults_CustTelList_Input search)
+        {
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerTelephoneList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustTelList_Output> ret = dt.ToListCollection<APIResults_CustTelList_Output>();
+                    return ret.AsEnumerable<APIResults_CustTelList_Output>();
+                }catch(Exception e)
+                {
+                    return (new List<APIResults_CustTelList_Output>()).AsEnumerable<APIResults_CustTelList_Output>();
+                }
+            }
+        }
+        */
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetCustomerTelephoneList")]
+        public object GetCustomerTelephoneList_Validation(APIResults_CustTelList_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetCustomerTelephoneList_cSec2(search));
+        }
+        public IEnumerable<object> GetCustomerTelephoneList_cSec2(APIResults_CustTelList_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetCustomerTelephoneList_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_CustTelList_Output> ret = dt.ToListCollection<APIResults_CustTelList_Output>();
+                    return ret.AsEnumerable<APIResults_CustTelList_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_CustTelList_Output>()).AsEnumerable<APIResults_CustTelList_Output>();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the latest chargeable lines for a customer. 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        /* REMOVE FOR PREACT
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetDailyCustomerProduct")]
+        public IEnumerable<APIResults_DailyCustProd_Output> GetDailyCustomerProduct(APIResults_DailyCustProd_Input search)
+        {
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetDailyCustomerProduct_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_DailyCustProd_Output> ret = dt.ToListCollection<APIResults_DailyCustProd_Output>();
+                    return ret.AsEnumerable<APIResults_DailyCustProd_Output>();
+                }catch(Exception e)
+                {
+                    return (new List<APIResults_DailyCustProd_Output>()).AsEnumerable<APIResults_DailyCustProd_Output>();
+                }
+            }
+        }
+        */
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetDailyCustomerProduct")]
+        public object GeDailyCustomerProduct_Validation(APIResults_DailyCustProd_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetDailyCustomerProduct_cSec2(search));
+        }
+        public IEnumerable<object> GetDailyCustomerProduct_cSec2(APIResults_DailyCustProd_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetDailyCustomerProduct_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_DailyCustProd_Output> ret = dt.ToListCollection<APIResults_DailyCustProd_Output>();
+                    return ret.AsEnumerable<APIResults_DailyCustProd_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_DailyCustProd_Output>()).AsEnumerable<APIResults_DailyCustProd_Output>();
+                }
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// Get the changes for chargeable lines for a customer since a specific date. 
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
+        /* REMOVE FOR PREACT
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetDailyCustomerProductChanges")]
+        public IEnumerable<APIResults_DailyCustProdChanges_Output> GetDailyCustomerProductChanges(APIResults_DailyCustProdChanges_Input search)
+        {
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetDailyCustomerProductChanges_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_DailyCustProdChanges_Output> ret = dt.ToListCollection<APIResults_DailyCustProdChanges_Output>();
+                    return ret.AsEnumerable<APIResults_DailyCustProdChanges_Output>();
+                }catch(Exception e)
+                {
+                    return (new List<APIResults_DailyCustProdChanges_Output>()).AsEnumerable<APIResults_DailyCustProdChanges_Output>();
+                }
+            }
+        }
+        */
+        [Authorize]
+        [HttpPost]
+        [Route("api/GetDailyCustomerProductChanges")]
+        public object GetDailyCustomerProductChanges_Validation(APIResults_DailyCustProdChanges_Input search)
+        {
+            string Code = "401";
+            string Message = "Authorisation Failed";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (!Code.Equals("200"))
+            {
+                return BadRequest(Message);
+            }
+            return Ok(GetDailyCustomerProductChanges_cSec2(search));
+        }
+        public IEnumerable<object> GetDailyCustomerProductChanges_cSec2(APIResults_DailyCustProdChanges_Input search)
+        {
+            string DBConnectionString = "";
+            string Code = "402";
+            string Message = "Authorisation Failed";
+            string Customer = "";
+            string Date = "20000101";
+            try
+            {
+                if (search != null)
+                {
+                    if (!String.IsNullOrEmpty(search.Customer))
+                        Customer = search.Customer;
+                    if (!String.IsNullOrEmpty(search.Date))
+                        Date = search.Date;
+
+                    string[] codeMessage = DateValidation(Date);
+                    Code = codeMessage[0];
+                    Message = codeMessage[1];
+                    if (!Code.Equals("200"))
+                    {
+                        return genErrorResult(Code, Message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            using (SqlConnection con = DbUtil.GetConnection())
+            {
+                try
+                {
+                    SqlCommand com = new SqlCommand("AuthAPI_GetDailyCustomerProductChanges_POST", con);
+                    com.CommandType = CommandType.StoredProcedure;
+                    SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                    RetVal.Direction = ParameterDirection.ReturnValue;
+                    com.Parameters.Add("Customer", SqlDbType.VarChar).Value = Customer;
+                    com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                    SqlDataAdapter da = new SqlDataAdapter(com);
+                    con.Open();
+                    DataSet ds = new DataSet();
+                    da.Fill(ds);
+                    da.Dispose();
+                    //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                    DataTable dt = ds.Tables[0];
+                    List<APIResults_DailyCustProdChanges_Output> ret = dt.ToListCollection<APIResults_DailyCustProdChanges_Output>();
+                    return ret.AsEnumerable<APIResults_DailyCustProdChanges_Output>();
+                }
+                catch (Exception e)
+                {
+                    return (new List<APIResults_DailyCustProdChanges_Output>()).AsEnumerable<APIResults_DailyCustProdChanges_Output>();
+                }
+            }
+        }
+
+        /*
+                [HttpPost]
+                [Route("api/GetCurrentProductStatus")]
+                public IEnumerable<products> GetDetCurrentProductStatus(SearchData search)
+                {
+                    string ProductCode = "";
+                    string Date = "20000101";
+                    try
+                    {
+                        if (search != null)
+                        {
+                            if (!String.IsNullOrEmpty(search.ProductCode))
+                                ProductCode = search.ProductCode;
+                            if (!String.IsNullOrEmpty(search.Date))
+                                Date = search.Date;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    using (SqlConnection con = DbUtil.GetConnection())
+                    {
+                        SqlCommand com = new SqlCommand("AuthAPI_GetProductList_POST", con);
+                        com.CommandType = CommandType.StoredProcedure;
+                        SqlParameter RetVal = com.Parameters.Add("RetVal", SqlDbType.VarChar);
+                        RetVal.Direction = ParameterDirection.ReturnValue;
+                        com.Parameters.Add("ProductCode", SqlDbType.VarChar).Value = ProductCode;
+                        com.Parameters.Add("Date", SqlDbType.VarChar).Value = Date;
+                        SqlDataAdapter da = new SqlDataAdapter(com);
+                        con.Open();
+                        DataSet ds = new DataSet();
+                        da.Fill(ds);
+                        da.Dispose();
+                        //      logger.Info("customers_get:, return={0}", RetVal.Value);
+                        DataTable dt = ds.Tables[0];
+                        List<products> ret = dt.ToListCollection<products>();
+                        return ret.AsEnumerable<products>();
+                    }
+                }
+                */
+    }
+
+}
